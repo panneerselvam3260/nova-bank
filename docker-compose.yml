@@ -1,0 +1,87 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: nova-bank-mysql
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_USER: bank
+      MYSQL_PASSWORD: bankpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ubank", "-pbankpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: auth-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_NAME: bank_auth
+      DB_USER: bank
+      DB_PASSWORD: bankpass
+      JWT_SECRET: change-me-please-32-character-secret-123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+
+  account-service:
+    build:
+      context: ./backend
+      dockerfile: account-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_NAME: bank_account
+      DB_USER: bank
+      DB_PASSWORD: bankpass
+      JWT_SECRET: change-me-please-32-character-secret-123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+
+  transaction-service:
+    build:
+      context: ./backend
+      dockerfile: transaction-service/Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_NAME: bank_transaction
+      DB_USER: bank
+      DB_PASSWORD: bankpass
+      JWT_SECRET: change-me-please-32-character-secret-123456
+      ACCOUNT_SERVICE_URL: http://account-service:8082
+    depends_on:
+      mysql:
+        condition: service_healthy
+      account-service:
+        condition: service_started
+    ports:
+      - "8083:8083"
+
+  frontend:
+    build: ./frontend
+    container_name: nova-bank-frontend
+    restart: unless-stopped
+    depends_on:
+      - auth-service
+      - account-service
+      - transaction-service
+    ports:
+      - "3000:80"
+
+volumes:
+  mysql_data:

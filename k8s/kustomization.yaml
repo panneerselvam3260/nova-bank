@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: nova-bank
+resources:
+  - namespace.yaml
+  - secrets.yaml
+  - mysql/configmap.yaml
+  - mysql/mysql.yaml
+  - apps/auth.yaml
+  - apps/account.yaml
+  - apps/transaction.yaml
+  - apps/frontend.yaml

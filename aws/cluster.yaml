@@ -1,0 +1,18 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: nova-bank
+  region: ap-south-1
+  version: "1.33"
+managedNodeGroups:
+  - name: nova-bank-app-nodes
+    instanceType: t3.small
+    minSize: 2
+    desiredCapacity: 2
+    maxSize: 4
+    volumeSize: 30
+    privateNetworking: false
+    iam:
+      withAddonPolicies:
+        autoScaler: true
+        cloudWatch: true
